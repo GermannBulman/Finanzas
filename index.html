@@ -329,6 +329,34 @@
     .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: #888780; gap: 12px; }
     .spinner { width: 28px; height: 28px; border: 2.5px solid #e8e8e0; border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+  .add-cuota-btn {
+    width: 100%; padding: 13px; background: white;
+    border: 1.5px dashed #9FE1CB; border-radius: 14px;
+    color: #1D9E75; font-size: 14px; font-weight: 600;
+    cursor: pointer; text-align: center; margin-bottom: 4px;
+    transition: background 0.15s; display: block;
+  }
+  .add-cuota-btn:active { background: #f0faf6; }
+  .cuota-item { padding: 13px 16px; border-bottom: 0.5px solid #f5f5ee; }
+  .cuota-item:last-child { border-bottom: none; }
+  .cuota-name { font-size: 14px; font-weight: 600; color: #2c2c2a; }
+  .cuota-detail { font-size: 12px; color: #888780; margin-top: 2px; }
+  .cuota-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .cuota-amount { font-size: 15px; font-weight: 700; color: var(--red); }
+  .cuota-badge { font-size: 11px; background: #FEE2E2; color: #B91C1C; padding: 2px 8px; border-radius: 10px; margin-top: 4px; display: inline-block; }
+  .cuota-done { color: #1D9E75 !important; background: #E1F5EE !important; }
+  .cuota-future { color: #888780 !important; background: #f5f5ee !important; }
+  .field-group { margin-bottom: 14px; }
+  .field-input { width: 100%; padding: 11px 13px; border: 1.5px solid #e8e8e0; border-radius: 12px; font-size: 16px; outline: none; transition: border-color 0.2s; -webkit-appearance: none; box-sizing: border-box; }
+  .field-input:focus { border-color: #1D9E75; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field-group { flex: 1; }
+  .cuota-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 600; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .cuota-modal-overlay.open { opacity: 1; pointer-events: all; }
+  .cuota-modal-sheet { background: white; border-radius: 24px 24px 0 0; padding: 0 20px calc(env(safe-area-inset-bottom,0px) + 28px); width: 100%; max-width: 430px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(.4,0,.2,1); max-height: 90vh; overflow-y: auto; }
+  .cuota-modal-overlay.open .cuota-modal-sheet { transform: translateY(0); }
+  .delete-cuota-btn { width: 100%; padding: 13px; background: #FCEBEB; border: none; border-radius: 12px; color: var(--red); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -501,54 +529,38 @@
     <!-- AHORROS -->
     <div class="tab-content" id="tab-ahorros">
       <div class="section-label">fondos compartidos</div>
-
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">✈️ Viajes Europa</span>
-          <span class="chip" style="background:#E6F1FB;color:#185FA5;">€200/mes</span>
-        </div>
+        <div class="card-header"><span class="card-title">✈️ Viajes Europa</span><span class="chip" style="background:#E6F1FB;color:#185FA5;">€200/mes</span></div>
         <div class="sav-detail">
-          <div class="sav-detail-row"><span class="lbl">Acumulado previo</span><span class="val">€0</span></div>
+          <div class="sav-detail-row"><span class="lbl">Acumulado hasta mes anterior</span><span class="val" id="sv-europa-prev">€0</span></div>
           <div class="sav-detail-row val-green"><span class="lbl">Este mes</span><span class="val">+€200</span></div>
-          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val">€200</span></div>
+          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val" id="sv-europa-total">€0</span></div>
         </div>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">🌎 Viaje Argentina</span>
-          <span class="chip" style="background:#E1F5EE;color:#0F6E56;">€300/mes</span>
-        </div>
+        <div class="card-header"><span class="card-title">🌎 Viaje Argentina</span><span class="chip" style="background:#E1F5EE;color:#0F6E56;">€300/mes</span></div>
         <div class="sav-detail">
-          <div class="sav-detail-row"><span class="lbl">Acumulado previo</span><span class="val">€0</span></div>
+          <div class="sav-detail-row"><span class="lbl">Acumulado hasta mes anterior</span><span class="val" id="sv-arg-prev">€0</span></div>
           <div class="sav-detail-row val-green"><span class="lbl">Este mes</span><span class="val">+€300</span></div>
-          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val">€300</span></div>
+          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val" id="sv-arg-total">€0</span></div>
         </div>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">🚗 Ahorro Auto</span>
-          <span class="chip" style="background:#FAEEDA;color:#854F0B;">€200/mes</span>
-        </div>
+        <div class="card-header"><span class="card-title">🚗 Ahorro Auto</span><span class="chip" style="background:#FAEEDA;color:#854F0B;">€200/mes</span></div>
         <div class="sav-detail">
-          <div class="sav-detail-row"><span class="lbl">Acumulado previo</span><span class="val">€0</span></div>
+          <div class="sav-detail-row"><span class="lbl">Acumulado hasta mes anterior</span><span class="val" id="sv-auto-prev">€0</span></div>
           <div class="sav-detail-row val-green"><span class="lbl">Este mes</span><span class="val">+€200</span></div>
-          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val">€200</span></div>
+          <div class="sav-detail-total"><span class="lbl">Total fondo</span><span class="val" id="sv-auto-total">€0</span></div>
         </div>
       </div>
 
-      <div class="section-label">ahorro individual</div>
-      <div class="card">
-        <div class="inc-row">
-          <div><div class="inc-name">🧍 Karen</div><div class="inc-sub">Aporte mensual</div></div>
-          <div class="inc-amount">€300</div>
-        </div>
-        <div class="inc-row">
-          <div><div class="inc-name">🧍 Germann</div><div class="inc-sub">Aporte mensual</div></div>
-          <div class="inc-amount">€300</div>
-        </div>
-      </div>
+      <div class="section-label">ahorro individual — karen</div>
+      <div class="card" id="karen-individual-card"></div>
+      <button class="add-cuota-btn" onclick="openCuotaModal('karen')">+ Agregar compromiso en cuotas</button>
+
+      <div class="section-label" style="margin-top:16px;">ahorro individual — germann</div>
+      <div class="card" id="germann-individual-card"></div>
+      <button class="add-cuota-btn" onclick="openCuotaModal('germann')">+ Agregar compromiso en cuotas</button>
     </div>
 
     <!-- HISTORIAL -->
@@ -619,6 +631,52 @@
       <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary" id="modal-save-btn" onclick="saveExpense()">+ Sumar</button>
     </div>
+  </div>
+</div>
+
+<!-- CUOTA MODAL -->
+<div class="cuota-modal-overlay" id="cuota-overlay" onclick="handleCuotaOverlayClick(event)">
+  <div class="cuota-modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="cuota-modal-title">Nuevo compromiso</div>
+    <div class="modal-sub" id="cuota-modal-sub">Karen · Agregar cuotas</div>
+    <div style="height:16px;"></div>
+
+    <div class="field-group">
+      <label class="field-label">Nombre del compromiso</label>
+      <input class="field-input" type="text" id="cuota-nombre" placeholder="Ej: Celular, Computadora...">
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">Valor por cuota (€)</label>
+        <input class="field-input" type="text" inputmode="decimal" id="cuota-valor" placeholder="0,00" oninput="updateCuotaPreview()">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Cantidad de cuotas</label>
+        <input class="field-input" type="number" inputmode="numeric" id="cuota-cantidad" placeholder="12" min="1" oninput="updateCuotaPreview()">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Mes de inicio</label>
+      <select class="field-input" id="cuota-mes-inicio">
+        <option value="0">Enero</option><option value="1">Febrero</option><option value="2">Marzo</option>
+        <option value="3">Abril</option><option value="4" selected>Mayo</option><option value="5">Junio</option>
+        <option value="6">Julio</option><option value="7">Agosto</option><option value="8">Septiembre</option>
+        <option value="9">Octubre</option><option value="10">Noviembre</option><option value="11">Diciembre</option>
+      </select>
+    </div>
+    <div class="new-total" id="cuota-preview" style="display:none; flex-direction:column; gap:4px;">
+      <div style="display:flex; justify-content:space-between;">
+        <span style="font-size:13px; color:#0F6E56;">Total del compromiso</span>
+        <span style="font-size:16px; font-weight:800; color:var(--teal);" id="cuota-total-preview">€0</span>
+      </div>
+      <div style="font-size:12px; color:#0F6E56;" id="cuota-duracion-preview"></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-cancel" onclick="closeCuotaModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCuota()">Guardar</button>
+    </div>
+    <button class="delete-cuota-btn" id="delete-cuota-btn" onclick="deleteCuota()" style="display:none;">🗑️ Eliminar este compromiso</button>
   </div>
 </div>
 
@@ -724,6 +782,7 @@ onAuthStateChanged(auth, user => {
 
 // ── FIREBASE SYNC ──
 function subscribeToData() {
+  // Listen to entire finanzas/2025 node (includes months AND cuotas)
   const dataRef = ref(db, 'finanzas/2025');
   dbUnsubscribe = onValue(dataRef, snapshot => {
     const val = snapshot.val() || {};
@@ -781,6 +840,8 @@ function renderAll() {
 
   renderGastos();
   renderHistorial();
+  renderIndividualCards();
+  renderResumenIndividual();
 }
 
 function renderGastos() {
@@ -1005,6 +1066,254 @@ window.saveExpense = async () => {
     await saveMonthData(curMonth, d);
     showToast(modalMode === 'sumar' ? `✅ +${fmt(val)} en ${meta.name}` : `✅ ${meta.name} corregido a ${fmt(d.variable[editKey])}`);
   }
+};
+
+
+// ── INDIVIDUAL SAVINGS & CUOTAS ──
+const AHORRO_MENSUAL = 300; // fixed monthly individual saving per person
+const MONTHS_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function getCuotas(person) {
+  return monthData[`cuotas_${person}`] || {};
+}
+
+// Returns total cuota deductions for a person in a given month
+function getCuotasDelMes(person, month) {
+  const cuotas = getCuotas(person);
+  let total = 0;
+  let items = [];
+  Object.entries(cuotas).forEach(([id, c]) => {
+    const start = c.mesInicio;
+    const end = start + c.cantidad - 1;
+    if (month >= start && month <= end) {
+      const cuotaNum = month - start + 1;
+      total += c.valor;
+      items.push({ id, name: c.nombre, valor: c.valor, cuotaNum, totalCuotas: c.cantidad });
+    }
+  });
+  return { total, items };
+}
+
+// Accumulated individual saving up to (not including) month m
+function getAhorroAcumulado(person, upToMonth) {
+  let total = 0;
+  for (let i = 0; i < upToMonth; i++) {
+    const { total: deducido } = getCuotasDelMes(person, i);
+    total += Math.max(0, AHORRO_MENSUAL - deducido);
+  }
+  return total;
+}
+
+// Net saving this month for a person
+function getAhorroNeto(person, month) {
+  const { total: deducido } = getCuotasDelMes(person, month);
+  return AHORRO_MENSUAL - deducido;
+}
+
+function renderIndividualCards() {
+  ['karen', 'germann'].forEach(person => {
+    const cuotas = getCuotas(person);
+    const { total: deducidoHoy, items } = getCuotasDelMes(person, curMonth);
+    const netoHoy = AHORRO_MENSUAL - deducidoHoy;
+    const acumulado = getAhorroAcumulado(person, curMonth);
+    const totalConEste = acumulado + netoHoy;
+
+    let html = `
+      <div class="inc-row" style="background:#f8fdf9;">
+        <div>
+          <div class="inc-name" style="font-size:13px; color:#888780;">Aporte mensual fijo</div>
+        </div>
+        <div class="inc-amount" style="font-size:14px;">+€${AHORRO_MENSUAL}</div>
+      </div>`;
+
+    if (items.length > 0) {
+      items.forEach(item => {
+        html += `
+        <div class="cuota-item">
+          <div class="cuota-row">
+            <div>
+              <div class="cuota-name">${item.name}</div>
+              <div class="cuota-detail">Cuota ${item.cuotaNum} de ${item.totalCuotas}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="cuota-amount">-${fmt(item.valor)}</div>
+              <button class="cuota-edit-btn" onclick="editCuota('${person}','${item.id}')">✏️ editar</button>
+            </div>
+          </div>
+          <span class="cuota-badge">Cuota ${item.cuotaNum}/${item.totalCuotas}</span>
+        </div>`;
+      });
+    }
+
+    // Show upcoming cuotas (not yet active this month)
+    Object.entries(cuotas).forEach(([id, c]) => {
+      const start = c.mesInicio;
+      const end = start + c.cantidad - 1;
+      if (curMonth < start) {
+        html += `
+        <div class="cuota-item" style="opacity:0.6;">
+          <div class="cuota-row">
+            <div>
+              <div class="cuota-name">${c.nombre}</div>
+              <div class="cuota-detail">Empieza en ${MONTHS_NAMES[start]}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="cuota-amount">-${fmt(c.valor)}</div>
+              <button class="cuota-edit-btn" onclick="editCuota('${person}','${id}')">✏️ editar</button>
+            </div>
+          </div>
+          <span class="cuota-badge cuota-future">Próximamente</span>
+        </div>`;
+      } else if (curMonth > end) {
+        html += `
+        <div class="cuota-item" style="opacity:0.5;">
+          <div class="cuota-row">
+            <div>
+              <div class="cuota-name">${c.nombre}</div>
+              <div class="cuota-detail">Finalizado en ${MONTHS_NAMES[end]}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px; font-weight:600; color:#1D9E75;">✓ pagado</div>
+              <button class="cuota-edit-btn" onclick="editCuota('${person}','${id}')">✏️ editar</button>
+            </div>
+          </div>
+          <span class="cuota-badge cuota-done">Completado</span>
+        </div>`;
+      }
+    });
+
+    html += `
+      <div class="inc-row" style="background:#f8fdf9; border-top: 0.5px solid #e8e8e0;">
+        <div>
+          <div class="inc-name">Neto este mes</div>
+          <div class="inc-sub">Acumulado total: ${fmt(totalConEste)}</div>
+        </div>
+        <div class="inc-amount" style="color:${netoHoy >= 0 ? 'var(--teal)' : 'var(--red)'};">${fmt(netoHoy)}</div>
+      </div>`;
+
+    document.getElementById(`${person}-individual-card`).innerHTML = html;
+  });
+
+  // Update savings tab shared funds accumulation
+  const europaPrev = curMonth * 200;
+  const argPrev = curMonth * 300;
+  const autoPrev = curMonth * 200;
+  if (document.getElementById('sv-europa-prev')) {
+    document.getElementById('sv-europa-prev').textContent = fmt(europaPrev);
+    document.getElementById('sv-europa-total').textContent = fmt(europaPrev + 200);
+    document.getElementById('sv-arg-prev').textContent = fmt(argPrev);
+    document.getElementById('sv-arg-total').textContent = fmt(argPrev + 300);
+    document.getElementById('sv-auto-prev').textContent = fmt(autoPrev);
+    document.getElementById('sv-auto-total').textContent = fmt(autoPrev + 200);
+  }
+}
+
+// Also update resumen tab individual savings
+function renderResumenIndividual() {
+  const karenNeto = getAhorroNeto('karen', curMonth);
+  const germanNeto = getAhorroNeto('germann', curMonth);
+  const karenAcum = getAhorroAcumulado('karen', curMonth) + karenNeto;
+  const germanAcum = getAhorroAcumulado('germann', curMonth) + germanNeto;
+  
+  const karenSub = document.getElementById('karen-net-sub');
+  const germanSub = document.getElementById('germann-net-sub');
+  if (karenSub) karenSub.textContent = `Neto: ${fmt(karenNeto)} · Acumulado: ${fmt(karenAcum)}`;
+  if (germanSub) germanSub.textContent = `Neto: ${fmt(germanNeto)} · Acumulado: ${fmt(germanAcum)}`;
+
+  // Update the static €300 amounts in resumen
+  const rows = document.querySelectorAll('#tab-resumen .inc-amount');
+  // rows[2] and [3] are individual savings — update dynamically via inner text if needed
+}
+
+// ── CUOTA MODAL ──
+let cuotaPerson = null;
+let cuotaEditId = null;
+
+window.openCuotaModal = (person) => {
+  cuotaPerson = person;
+  cuotaEditId = null;
+  const name = person === 'karen' ? 'Karen' : 'Germann';
+  document.getElementById('cuota-modal-title').textContent = 'Nuevo compromiso';
+  document.getElementById('cuota-modal-sub').textContent = `${name} · Agregar cuotas`;
+  document.getElementById('cuota-nombre').value = '';
+  document.getElementById('cuota-valor').value = '';
+  document.getElementById('cuota-cantidad').value = '';
+  document.getElementById('cuota-mes-inicio').value = curMonth;
+  document.getElementById('cuota-preview').style.display = 'none';
+  document.getElementById('delete-cuota-btn').style.display = 'none';
+  document.getElementById('cuota-overlay').classList.add('open');
+};
+
+window.editCuota = (person, id) => {
+  const cuotas = getCuotas(person);
+  const c = cuotas[id];
+  if (!c) return;
+  cuotaPerson = person;
+  cuotaEditId = id;
+  const name = person === 'karen' ? 'Karen' : 'Germann';
+  document.getElementById('cuota-modal-title').textContent = 'Editar compromiso';
+  document.getElementById('cuota-modal-sub').textContent = `${name} · Modificar cuotas`;
+  document.getElementById('cuota-nombre').value = c.nombre;
+  document.getElementById('cuota-valor').value = String(c.valor).replace('.', ',');
+  document.getElementById('cuota-cantidad').value = c.cantidad;
+  document.getElementById('cuota-mes-inicio').value = c.mesInicio;
+  document.getElementById('delete-cuota-btn').style.display = 'block';
+  updateCuotaPreview();
+  document.getElementById('cuota-overlay').classList.add('open');
+};
+
+window.closeCuotaModal = () => {
+  document.getElementById('cuota-overlay').classList.remove('open');
+  cuotaPerson = null; cuotaEditId = null;
+};
+
+window.handleCuotaOverlayClick = e => {
+  if (e.target === document.getElementById('cuota-overlay')) closeCuotaModal();
+};
+
+window.updateCuotaPreview = () => {
+  const valor = parseFloat((document.getElementById('cuota-valor').value || '0').replace(',', '.'));
+  const cantidad = parseInt(document.getElementById('cuota-cantidad').value) || 0;
+  const mesInicio = parseInt(document.getElementById('cuota-mes-inicio').value);
+  const preview = document.getElementById('cuota-preview');
+  if (valor > 0 && cantidad > 0) {
+    const total = valor * cantidad;
+    const mesFin = Math.min(11, mesInicio + cantidad - 1);
+    document.getElementById('cuota-total-preview').textContent = fmt(total);
+    document.getElementById('cuota-duracion-preview').textContent =
+      `${MONTHS_NAMES[mesInicio]} → ${MONTHS_NAMES[mesFin]} · ${cantidad} cuotas de ${fmt(valor)}`;
+    preview.style.display = 'flex';
+  } else {
+    preview.style.display = 'none';
+  }
+};
+
+window.saveCuota = async () => {
+  const nombre = document.getElementById('cuota-nombre').value.trim();
+  const valor = parseFloat((document.getElementById('cuota-valor').value || '0').replace(',', '.'));
+  const cantidad = parseInt(document.getElementById('cuota-cantidad').value);
+  const mesInicio = parseInt(document.getElementById('cuota-mes-inicio').value);
+
+  if (!nombre) { showToast('Ingresá un nombre'); return; }
+  if (!valor || valor <= 0) { showToast('Ingresá el valor de la cuota'); return; }
+  if (!cantidad || cantidad < 1) { showToast('Ingresá la cantidad de cuotas'); return; }
+
+  const cuotas = { ...(getCuotas(cuotaPerson)) };
+  const id = cuotaEditId || `c_${Date.now()}`;
+  cuotas[id] = { nombre, valor, cantidad, mesInicio };
+
+  await set(ref(db, `finanzas/2025/cuotas_${cuotaPerson}`), cuotas);
+  closeCuotaModal();
+  showToast(`✅ Compromiso "${nombre}" guardado`);
+};
+
+window.deleteCuota = async () => {
+  if (!cuotaEditId || !cuotaPerson) return;
+  const cuotas = { ...(getCuotas(cuotaPerson)) };
+  delete cuotas[cuotaEditId];
+  await set(ref(db, `finanzas/2025/cuotas_${cuotaPerson}`), cuotas);
+  closeCuotaModal();
+  showToast('🗑️ Compromiso eliminado');
 };
 
 // ── USER MENU ──
