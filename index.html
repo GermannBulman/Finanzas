@@ -607,7 +607,7 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut as fbSignOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getDatabase, ref, onValue, set, get }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
@@ -667,11 +667,7 @@ const fmtS = n => n >= 1000 ? '€' + (n/1000).toFixed(1) + 'k' : '€' + Math.r
 window.signInWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    if (!ALLOWED_EMAILS.includes(result.user.email)) {
-      await fbSignOut(auth);
-      showToast('⛔ Acceso no autorizado');
-    }
+    await signInWithRedirect(auth, provider);
   } catch(e) { showToast('Error al iniciar sesión'); }
 };
 
@@ -679,6 +675,13 @@ window.signOut = async () => {
   await fbSignOut(auth);
   closeUserMenu();
 };
+
+getRedirectResult(auth).then(result => {
+  if (result && result.user && !ALLOWED_EMAILS.includes(result.user.email)) {
+    fbSignOut(auth);
+    showToast('⛔ Acceso no autorizado');
+  }
+}).catch(() => {});
 
 onAuthStateChanged(auth, user => {
   if (user && ALLOWED_EMAILS.includes(user.email)) {
