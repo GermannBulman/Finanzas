@@ -589,20 +589,35 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">Supermercado</div>
     <div class="modal-sub" id="modal-sub">Mayo · Agregar compra</div>
-    <div class="modal-tip">💡 El monto se suma al acumulado. Cargá cada compra por separado — el sistema va sumando durante el mes.</div>
-    <label class="field-label">Monto a agregar (€)</label>
-    <input class="amount-input" type="number" id="modal-input" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="updateModalPreview()">
+
+    <!-- Mode switcher -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;" id="modal-mode-row">
+      <button id="btn-mode-sumar" onclick="setModalMode('sumar')"
+        style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:600;border:1.5px solid #1D9E75;background:#1D9E75;color:white;cursor:pointer;">
+        + Sumar gasto
+      </button>
+      <button id="btn-mode-corregir" onclick="setModalMode('corregir')"
+        style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:600;border:1.5px solid #e8e8e0;background:white;color:#5F5E5A;cursor:pointer;">
+        ✏️ Corregir total
+      </button>
+    </div>
+
+    <div class="modal-tip" id="modal-tip">💡 El monto se suma al acumulado. Cargá cada compra por separado.</div>
+
+    <label class="field-label" id="modal-input-label">Monto a agregar (€)</label>
+    <input class="amount-input" type="text" inputmode="decimal" id="modal-input" placeholder="0,00" oninput="updateModalPreview()">
+
     <div class="current-display">
       <span>Acumulado actual</span>
       <span class="val" id="modal-current-val">€0.00</span>
     </div>
     <div class="new-total" id="modal-new-total" style="display:none">
-      <span class="lbl">Nuevo total</span>
+      <span class="lbl" id="modal-new-label">Nuevo total</span>
       <span class="val" id="modal-new-val">€0.00</span>
     </div>
     <div class="btn-row">
       <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveExpense()">+ Sumar</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveExpense()">+ Sumar</button>
     </div>
   </div>
 </div>
@@ -737,9 +752,13 @@ function getMonth(m) {
   return monthData[k];
 }
 
-function totalFixed() { return FIXED.reduce((s,e) => s + e.amount, 0); }
+function totalFixed(m) {
+  const d = getMonth(m !== undefined ? m : curMonth);
+  const fixedData = d.fixed || {};
+  return FIXED.reduce((s,e) => s + (fixedData[e.key] !== undefined ? fixedData[e.key] : e.amount), 0);
+}
 function totalVariable(m) { const d = getMonth(m); return VARIABLE.reduce((s,e) => s + (d.variable?.[e.key] || 0), 0); }
-function totalGastos(m) { return totalFixed() + totalVariable(m); }
+function totalGastos(m) { return totalFixed(m) + totalVariable(m); }
 const BUDGET = 2850;
 const FIXED_BUDGET = FIXED.reduce((s,e) => s + e.budget || e.amount, 0);
 const VAR_BUDGET = VARIABLE.reduce((s,e) => s + e.budget, 0);
@@ -767,19 +786,21 @@ function renderAll() {
 function renderGastos() {
   const d = getMonth(curMonth);
 
-  // Fixed
+  // Fixed — now tappable to edit
+  const fixedData = d.fixed || {};
   document.getElementById('fixed-card').innerHTML = FIXED.map(e => {
-    const pct = Math.min(100, (e.amount / e.amount) * 100);
-    return `<div class="exp-row">
+    const actual = fixedData[e.key] !== undefined ? fixedData[e.key] : e.amount;
+    return `<div class="exp-row tappable" onclick="openFixedModal('${e.key}')">
       <div class="exp-icon" style="background:${e.bg}">${e.icon}</div>
       <div class="exp-info">
         <div class="exp-name">${e.name}</div>
-        <div class="exp-bar"><div class="exp-bar-fill" style="background:var(--teal); width:100%"></div></div>
+        <div class="exp-sub">Tocá para modificar</div>
       </div>
       <div class="exp-right">
-        <div class="exp-amount" style="color:var(--teal)">${fmt(e.amount)}</div>
-        <div class="exp-budget">fijo</div>
+        <div class="exp-amount" style="color:var(--teal)">${fmt(actual)}</div>
+        <div class="exp-budget">mensual</div>
       </div>
+      <span class="exp-arrow">›</span>
     </div>`;
   }).join('');
 
@@ -871,17 +892,68 @@ window.switchTab = tab => {
 
 // ── MODAL ──
 let editKey = null;
+let editType = 'variable'; // 'variable' or 'fixed'
+let modalMode = 'sumar'; // 'sumar' or 'corregir'
+
+function parseAmount(str) {
+  // Accept both comma and dot as decimal separator
+  return parseFloat(str.replace(',', '.'));
+}
+
+window.setModalMode = mode => {
+  modalMode = mode;
+  const isSumar = mode === 'sumar';
+  document.getElementById('btn-mode-sumar').style.background = isSumar ? '#1D9E75' : 'white';
+  document.getElementById('btn-mode-sumar').style.color = isSumar ? 'white' : '#5F5E5A';
+  document.getElementById('btn-mode-sumar').style.borderColor = isSumar ? '#1D9E75' : '#e8e8e0';
+  document.getElementById('btn-mode-corregir').style.background = !isSumar ? '#1D9E75' : 'white';
+  document.getElementById('btn-mode-corregir').style.color = !isSumar ? 'white' : '#5F5E5A';
+  document.getElementById('btn-mode-corregir').style.borderColor = !isSumar ? '#1D9E75' : '#e8e8e0';
+  document.getElementById('modal-tip').textContent = isSumar
+    ? '💡 El monto se suma al acumulado. Cargá cada compra por separado.'
+    : '✏️ Reemplaza el total actual con el valor que ingreses.';
+  document.getElementById('modal-input-label').textContent = isSumar ? 'Monto a agregar (€)' : 'Nuevo total (€)';
+  document.getElementById('modal-save-btn').textContent = isSumar ? '+ Sumar' : '✓ Guardar';
+  document.getElementById('modal-new-label').textContent = isSumar ? 'Nuevo total' : 'Se guardará como';
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-new-total').style.display = 'none';
+};
 
 window.openModal = key => {
   editKey = key;
+  editType = 'variable';
+  modalMode = 'sumar';
   const meta = VARIABLE.find(e => e.key === key);
   const d = getMonth(curMonth);
   const cur = d.variable?.[key] || 0;
   document.getElementById('modal-title').textContent = meta.icon + ' ' + meta.name;
-  document.getElementById('modal-sub').textContent = MONTHS[curMonth] + ' · Agregar nuevo gasto';
+  document.getElementById('modal-sub').textContent = MONTHS[curMonth] + ' · Gastos variables';
   document.getElementById('modal-current-val').textContent = fmt(cur);
   document.getElementById('modal-input').value = '';
   document.getElementById('modal-new-total').style.display = 'none';
+  document.getElementById('modal-mode-row').style.display = 'flex';
+  setModalMode('sumar');
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('modal-input').focus(), 350);
+};
+
+window.openFixedModal = key => {
+  editKey = key;
+  editType = 'fixed';
+  modalMode = 'corregir';
+  const meta = FIXED.find(e => e.key === key);
+  const d = getMonth(curMonth);
+  const cur = d.fixed?.[key] !== undefined ? d.fixed[key] : meta.amount;
+  document.getElementById('modal-title').textContent = meta.icon + ' ' + meta.name;
+  document.getElementById('modal-sub').textContent = MONTHS[curMonth] + ' · Gasto fijo';
+  document.getElementById('modal-current-val').textContent = fmt(cur);
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-new-total').style.display = 'none';
+  document.getElementById('modal-mode-row').style.display = 'none';
+  document.getElementById('modal-tip').textContent = '✏️ Modificá el monto de este gasto fijo para este mes.';
+  document.getElementById('modal-input-label').textContent = 'Nuevo monto (€)';
+  document.getElementById('modal-save-btn').textContent = '✓ Guardar';
+  document.getElementById('modal-new-label').textContent = 'Se guardará como';
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('modal-input').focus(), 350);
 };
@@ -890,10 +962,16 @@ window.closeModal = () => { document.getElementById('modal-overlay').classList.r
 window.handleOverlayClick = e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); };
 
 window.updateModalPreview = () => {
-  const val = parseFloat(document.getElementById('modal-input').value) || 0;
+  const raw = document.getElementById('modal-input').value;
+  const val = parseAmount(raw) || 0;
   const d = getMonth(curMonth);
-  const cur = d.variable?.[editKey] || 0;
-  const newTotal = cur + val;
+  let newTotal;
+  if (editType === 'fixed') {
+    newTotal = val;
+  } else {
+    const cur = d.variable?.[editKey] || 0;
+    newTotal = modalMode === 'sumar' ? cur + val : val;
+  }
   const show = val > 0;
   document.getElementById('modal-new-total').style.display = show ? 'flex' : 'none';
   document.getElementById('modal-new-val').textContent = fmt(newTotal);
@@ -901,14 +979,32 @@ window.updateModalPreview = () => {
 
 window.saveExpense = async () => {
   if (!editKey) return;
-  const val = parseFloat(document.getElementById('modal-input').value);
-  if (isNaN(val) || val <= 0) { showToast('Ingresá un monto válido'); return; }
+  const raw = document.getElementById('modal-input').value;
+  const val = parseAmount(raw);
+  if (isNaN(val) || val < 0) { showToast('Ingresá un monto válido'); return; }
   const d = getMonth(curMonth);
-  if (!d.variable) d.variable = {};
-  d.variable[editKey] = (d.variable[editKey] || 0) + val;
-  closeModal();
-  await saveMonthData(curMonth, d);
-  showToast(`✅ +${fmt(val)} en ${VARIABLE.find(e=>e.key===editKey).name}`);
+
+  if (editType === 'fixed') {
+    if (!d.fixed) d.fixed = {};
+    d.fixed[editKey] = val;
+    const meta = FIXED.find(e => e.key === editKey);
+    closeModal();
+    await saveMonthData(curMonth, d);
+    showToast(`✅ ${meta.name} actualizado a ${fmt(val)}`);
+  } else {
+    if (!d.variable) d.variable = {};
+    const cur = d.variable[editKey] || 0;
+    if (modalMode === 'sumar') {
+      if (val <= 0) { showToast('Ingresá un monto mayor a 0'); return; }
+      d.variable[editKey] = cur + val;
+    } else {
+      d.variable[editKey] = val;
+    }
+    const meta = VARIABLE.find(e => e.key === editKey);
+    closeModal();
+    await saveMonthData(curMonth, d);
+    showToast(modalMode === 'sumar' ? `✅ +${fmt(val)} en ${meta.name}` : `✅ ${meta.name} corregido a ${fmt(d.variable[editKey])}`);
+  }
 };
 
 // ── USER MENU ──
